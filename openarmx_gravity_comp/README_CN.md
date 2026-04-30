@@ -226,7 +226,18 @@ ros2 param get /gravity_comp_node g_scale
 | `g_scale` | double | `1.05` | 重力力矩整体缩放系数 |
 | `enable_left` | bool | `true` | 是否启用左臂补偿 |
 | `enable_right` | bool | `true` | 是否启用右臂补偿 |
+| `enable_compensation` | bool | `true` | 是否输出前馈力矩；设为 `false` 时发布全零力矩，用于示教拖动模式 |
 | `verbose` | bool | `false` | 是否打印每个关节的实时力矩（1 秒节流） |
+
+`enable_compensation` 支持运行时动态修改，无需重启节点：
+
+```bash
+# 关闭前馈补偿（示教拖动模式，kp/kd 已置零时避免过于跟手）
+ros2 param set /gravity_comp_node enable_compensation false
+
+# 重新开启前馈补偿
+ros2 param set /gravity_comp_node enable_compensation true
+```
 
 ---
 

@@ -50,11 +50,13 @@ public:
         this->declare_parameter<bool>("enable_left", true);
         this->declare_parameter<bool>("enable_right", true);
         this->declare_parameter<bool>("verbose", false);
+        this->declare_parameter<bool>("enable_compensation", true);
 
-        g_scale_      = this->get_parameter("g_scale").as_double();
-        verbose_      = this->get_parameter("verbose").as_bool();
-        enable_left_  = this->get_parameter("enable_left").as_bool();
-        enable_right_ = this->get_parameter("enable_right").as_bool();
+        g_scale_             = this->get_parameter("g_scale").as_double();
+        verbose_             = this->get_parameter("verbose").as_bool();
+        enable_left_         = this->get_parameter("enable_left").as_bool();
+        enable_right_        = this->get_parameter("enable_right").as_bool();
+        enable_compensation_ = this->get_parameter("enable_compensation").as_bool();
 
         std::string urdf_path = this->get_parameter("urdf_path").as_string();
         if (urdf_path.empty()) {
@@ -106,6 +108,10 @@ public:
                     if (p.get_name() == "g_scale") {
                         g_scale_ = p.as_double();
                         RCLCPP_INFO(get_logger(), "g_scale updated to %.3f", g_scale_);
+                    } else if (p.get_name() == "enable_compensation") {
+                        enable_compensation_ = p.as_bool();
+                        RCLCPP_INFO(get_logger(), "enable_compensation set to %s",
+                                    enable_compensation_ ? "true" : "false");
                     }
                 }
                 return result;
@@ -116,7 +122,8 @@ public:
             "/joint_states", 10,
             std::bind(&GravityCompNode::joint_state_callback, this, std::placeholders::_1));
 
-        RCLCPP_INFO(get_logger(), "gravity_comp_node started. g_scale=%.3f", g_scale_);
+        RCLCPP_INFO(get_logger(), "gravity_comp_node started. g_scale=%.3f enable_compensation=%s",
+                    g_scale_, enable_compensation_ ? "true" : "false");
     }
 
 private:
@@ -137,6 +144,15 @@ private:
         rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr & pub)
     {
         const size_t ndof = joint_names.size();  // 7
+
+        // When compensation is disabled, publish zero torques to clear any residual feedforward
+        if (!enable_compensation_) {
+            auto out = std_msgs::msg::Float64MultiArray();
+            out.data.assign(ndof, 0.0);
+            pub->publish(out);
+            return;
+        }
+
         std::vector<double> q(ndof, 0.0);
 
         // Map joint_states (unordered) into q[] by name lookup
@@ -175,10 +191,11 @@ private:
     }
 
     // Parameters
-    double g_scale_     = 0.95;
-    bool verbose_       = false;
-    bool enable_left_   = true;
-    bool enable_right_  = true;
+    double g_scale_            = 1.05;
+    bool verbose_              = false;
+    bool enable_left_          = true;
+    bool enable_right_         = true;
+    bool enable_compensation_  = true;
 
     // Dynamics
     std::unique_ptr<Dynamics> left_dyn_;

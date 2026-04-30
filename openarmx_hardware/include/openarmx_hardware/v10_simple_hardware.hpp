@@ -143,6 +143,7 @@ class OpenArmX_v10HW : public hardware_interface::SystemInterface {
   // Configuration
   std::string can_interface_;
   std::string arm_prefix_;
+  std::string node_namespace_;
   bool hand_;
   bool can_fd_;
   enum class ControlMode { MIT, CSP };

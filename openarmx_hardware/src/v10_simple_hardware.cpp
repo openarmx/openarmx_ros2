@@ -60,6 +60,10 @@ bool OpenArmX_v10HW::parse_config(const hardware_interface::HardwareInfo& info) 
   it = info.hardware_parameters.find("arm_prefix");
   arm_prefix_ = (it != info.hardware_parameters.end()) ? it->second : "";
 
+  // Parse node_namespace (launch-level prefix, e.g. "robot1" for multi-robot)
+  it = info.hardware_parameters.find("node_namespace");
+  node_namespace_ = (it != info.hardware_parameters.end()) ? it->second : "";
+
   // Parse gripper enable (default: true for V10)
   it = info.hardware_parameters.find("hand");
   if (it == info.hardware_parameters.end()) {
@@ -160,7 +164,8 @@ hardware_interface::CallbackReturn OpenArmX_v10HW::on_init(
 
   // Initialize ROS2 node for dynamic parameters
   std::string node_name = "openarmx_" + arm_prefix_ + "hardware_params";
-  param_node_ = std::make_shared<rclcpp::Node>(node_name);
+  std::string node_ns = node_namespace_.empty() ? "" : ("/" + node_namespace_);
+  param_node_ = std::make_shared<rclcpp::Node>(node_name, node_ns);
 
   // Initialize KP and KD values with defaults
   // 注意：第8个值是夹爪，增大KP/KD可提高响应速度和阻尼

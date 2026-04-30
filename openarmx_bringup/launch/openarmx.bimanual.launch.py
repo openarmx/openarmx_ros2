@@ -36,7 +36,7 @@ def namespace_from_context(context, arm_prefix):
 
 
 def generate_robot_description(context: LaunchContext, description_package, description_file,
-                               arm_type, use_fake_hardware, can_fd, right_can_interface, left_can_interface, control_mode):
+                               arm_type, use_fake_hardware, can_fd, right_can_interface, left_can_interface, control_mode, arm_prefix):
     """Generate robot description using xacro processing."""
 
     description_package_str = context.perform_substitution(description_package)
@@ -47,6 +47,8 @@ def generate_robot_description(context: LaunchContext, description_package, desc
     right_can_interface_str = context.perform_substitution(right_can_interface)
     left_can_interface_str = context.perform_substitution(left_can_interface)
     control_mode_str = context.perform_substitution(control_mode)
+    arm_prefix_str = context.perform_substitution(arm_prefix)
+    node_namespace_str = arm_prefix_str.strip('/')
 
     xacro_path = os.path.join(
         get_package_share_directory(description_package_str),
@@ -65,6 +67,7 @@ def generate_robot_description(context: LaunchContext, description_package, desc
             "right_can_interface": right_can_interface_str,
             "left_can_interface": left_can_interface_str,
             "control_mode": control_mode_str,
+            "node_namespace": node_namespace_str,
         }
     ).toprettyxml(indent="  ")
 
@@ -77,7 +80,7 @@ def robot_nodes_spawner(context: LaunchContext, description_package, description
     namespace = namespace_from_context(context, arm_prefix)
 
     robot_description = generate_robot_description(
-        context, description_package, description_file, arm_type, use_fake_hardware, can_fd, right_can_interface, left_can_interface, control_mode,
+        context, description_package, description_file, arm_type, use_fake_hardware, can_fd, right_can_interface, left_can_interface, control_mode, arm_prefix,
     )
 
     controllers_file_str = context.perform_substitution(controllers_file)
@@ -164,7 +167,7 @@ def gravity_comp_node_launcher(context: LaunchContext, description_package,
     robot_description = generate_robot_description(
         context, description_package, description_file, arm_type,
         use_fake_hardware, can_fd, right_can_interface, left_can_interface,
-        control_mode,
+        control_mode, arm_prefix,
     )
 
     # Write URDF to a temp file so gravity_comp_node can load it via KDL
